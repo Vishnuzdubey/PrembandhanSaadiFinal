@@ -1,12 +1,64 @@
 import { Button } from "@/components/ui/button";
-import { MapPin, Search, User, Heart, Phone, Shield, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { MapPin, Search, User, Heart, Phone, Shield, Menu, X, LogOut, Settings } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AuthModal from "./AuthModal";
 
 const Header = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    const token = localStorage.getItem('prembandhanToken');
+    if (token) {
+      try {
+        const response = await fetch('https://pb-app-lac.vercel.app/api/v1/myprofile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setUser(data.user);
+          }
+        } else {
+          // Token is invalid, remove it
+          localStorage.removeItem('prembandhanToken');
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        localStorage.removeItem('prembandhanToken');
+      }
+    }
+    setIsLoading(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('prembandhanToken');
+    setUser(null);
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+  };
 
   const handleRegisterClick = () => {
     setShowAuthModal(true);
@@ -15,7 +67,7 @@ const Header = () => {
   return (
     <>
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      
+
       {/* Top Bar */}
       <div className="hidden md:block bg-gradient-to-r from-rose/10 to-gold/10 border-b border-rose/20">
         <div className="container mx-auto px-4 py-2">
@@ -61,7 +113,7 @@ const Header = () => {
                 <span className="text-xs text-muted-foreground font-medium">Gorakhpur's Trusted Platform</span>
               </Link>
             </div>
-            
+
             {/* City Selector */}
             <div className="hidden lg:flex items-center space-x-2 bg-gray-50 rounded-full px-4 py-2">
               <MapPin className="h-4 w-4 text-rose" />
@@ -93,24 +145,70 @@ const Header = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-       
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowAuthModal(true)}
-              className="font-semibold border-2 hover:bg-rose hover:border-rose hover:text-white transition-all duration-200"
-            >
-              <User className="h-4 w-4 mr-2" />
-              Login
-            </Button>
-            <Button 
-              variant="hero" 
-              size="sm"
-              className="font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-              onClick={handleRegisterClick}
-            >
-              Register Free
-            </Button>
+            {isLoading ? (
+              <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage
+                        src={user.images?.[0]?.url}
+                        alt={user.name}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="bg-rose text-white">
+                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">{user.phone}</p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      My Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAuthModal(true)}
+                  className="font-semibold border-2 hover:bg-rose hover:border-rose hover:text-white transition-all duration-200"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Login
+                </Button>
+                <Button
+                  variant="hero"
+                  size="sm"
+                  className="font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                  onClick={handleRegisterClick}
+                >
+                  Register Free
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -136,7 +234,7 @@ const Header = () => {
                   <option>Gorakhpur, UP</option>
                 </select>
               </div>
-              
+
               <nav className="space-y-3">
                 <a href="#how-it-works" className="block text-sm font-semibold hover:text-rose transition-colors py-2">
                   How It Works
@@ -147,30 +245,73 @@ const Header = () => {
                 <Link to="/ContactUs" className="block text-sm font-semibold hover:text-rose transition-colors py-2">
                   Contact Us
                 </Link>
+                <Link to="/BrowseProfile" className="block text-sm font-semibold hover:text-rose transition-colors py-2">
+                  Browse Profile
+                </Link>
               </nav>
 
               <div className="space-y-3 pt-4 border-t">
-                <Button variant="ghost" size="sm" className="w-full justify-start font-semibold">
-                  <Search className="h-4 w-4 mr-2" />
-                  Quick Search
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setShowAuthModal(true)}
-                  className="w-full font-semibold"
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Login
-                </Button>
-                <Button 
-                  variant="hero" 
-                  size="sm"
-                  className="w-full font-semibold"
-                  onClick={handleRegisterClick}
-                >
-                  Register Free
-                </Button>
+                {isLoading ? (
+                  <div className="w-full h-10 bg-gray-200 rounded-md animate-pulse"></div>
+                ) : user ? (
+                  <>
+                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage
+                          src={user.images?.[0]?.url}
+                          alt={user.name}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="bg-rose text-white">
+                          {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-sm">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{user.phone}</p>
+                      </div>
+                    </div>
+                    <Link to="/profile" className="w-full">
+                      <Button variant="outline" size="sm" className="w-full justify-start font-semibold">
+                        <User className="h-4 w-4 mr-2" />
+                        My Profile
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="w-full justify-start font-semibold"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="ghost" size="sm" className="w-full justify-start font-semibold">
+                      <Search className="h-4 w-4 mr-2" />
+                      Quick Search
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAuthModal(true)}
+                      className="w-full font-semibold"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Login
+                    </Button>
+                    <Button
+                      variant="hero"
+                      size="sm"
+                      className="w-full font-semibold"
+                      onClick={handleRegisterClick}
+                    >
+                      Register Free
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

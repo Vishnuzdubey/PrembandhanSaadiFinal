@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import CreateProfile from "./CreateProfile";
 
 interface AuthModalProps {
@@ -11,13 +11,14 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
-type Page = 'auth' | 'createProfile';
+type Page = 'auth' | 'createProfile' | 'login';
 
 const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [currentPage, setCurrentPage] = useState<Page>('auth');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleNavigate = (page: Page) => {
     setCurrentPage(page);
@@ -25,7 +26,62 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
 
   const handleClose = () => {
     setCurrentPage('auth');
+    setPhone('');
+    setDateOfBirth('');
+    setIsLoading(false);
     onClose();
+  };
+
+  const handleLogin = async () => {
+    if (!phone || !dateOfBirth) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('https://pb-app-lac.vercel.app/api/v1/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone,
+          dateOfBirth,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.token) {
+        localStorage.setItem('prembandhanToken', data.token);
+        toast({
+          title: "Success",
+          description: "Login successful!",
+        });
+        handleClose();
+        // Refresh the page to update the header with user info
+        window.location.reload();
+      } else {
+        toast({
+          title: "Error",
+          description: "Invalid credentials. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (currentPage === 'createProfile') {
@@ -38,6 +94,59 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     );
   }
 
+  if (currentPage === 'login') {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-2xl font-bold text-foreground">
+              Login to PremBandhan<span className="text-rose">Shaadi</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-6">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Enter your phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dateOfBirth">Date of Birth</Label>
+              <Input
+                id="dateOfBirth"
+                type="date"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+              />
+            </div>
+            <Button
+              className="w-full"
+              variant="hero"
+              onClick={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? "Logging in..." : "Login"}
+            </Button>
+            <div className="text-center">
+              <Button
+                variant="link"
+                onClick={() => handleNavigate('auth')}
+                className="text-sm text-rose"
+              >
+                Back to options
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
@@ -45,92 +154,30 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
           <DialogTitle className="text-2xl font-bold text-foreground">
             Welcome to PremBandhan<span className="text-rose">Shaadi</span>
           </DialogTitle>
-          <div className="mt-4">
-            <Button 
-              variant="premium" 
-              size="lg" 
-              className="w-full"
-              onClick={() => handleNavigate('createProfile')}
-            >
-              Create Profile
-            </Button>
-          </div>
         </DialogHeader>
 
-        <div className="mt-6">
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <Button className="w-full" variant="hero">
-                Login
-              </Button>
-              <div className="text-center">
-                <a href="#" className="text-sm text-rose hover:underline">
-                  Forgot Password?
-                </a>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="signup" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-phone">Phone</Label>
-                <Input
-                  id="signup-phone"
-                  type="tel"
-                  placeholder="Enter your phone number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  placeholder="Create a password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <Button className="w-full" variant="hero">
-                Sign Up
-              </Button>
-            </TabsContent>
-          </Tabs>
+        <div className="mt-6 space-y-4">
+          <div className="text-center text-gray-600 mb-6">
+            Choose an option to get started
+          </div>
+
+          <Button
+            variant="premium"
+            size="lg"
+            className="w-full"
+            onClick={() => handleNavigate('createProfile')}
+          >
+            Create New Profile
+          </Button>
+
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full"
+            onClick={() => handleNavigate('login')}
+          >
+            Login to Existing Account
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
