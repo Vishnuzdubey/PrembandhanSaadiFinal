@@ -132,9 +132,9 @@ const FeaturedProfiles = () => {
 
       // Fallback to cached data even if expired
       const cachedData = getCachedData();
-      if (cachedData) {
-        setProfiles(cachedData);
-      }
+      // if (cachedData) {
+      //   setProfiles(cachedData);
+      // }
     } finally {
       setIsLoading(false);
     }
