@@ -161,12 +161,18 @@ const CreateProfile = ({ onNavigate }: CreateProfileProps) => {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.success && data.token) {
+        // Store the token
+        localStorage.setItem('prembandhanToken', data.token);
+
         toast({
           title: "Success",
-          description: "Profile created successfully! You can now login.",
+          description: "Profile created successfully! Welcome to PremBandhanShaadi.",
         });
+
+        // Close the modal and refresh to update header
         onNavigate('auth');
+        window.location.reload();
       } else {
         toast({
           title: "Error",
