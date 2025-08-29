@@ -31,10 +31,6 @@ const FeaturedProfiles = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Cache key for featured profiles
-  const CACHE_KEY = 'featured_profiles_cache';
-  const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
-
   const calculateAge = (dateOfBirth: string): number => {
     const today = new Date();
     const birthDate = new Date(dateOfBirth);
@@ -48,70 +44,24 @@ const FeaturedProfiles = () => {
     return age;
   };
 
-  const getCachedData = () => {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        const now = Date.now();
-
-        // Check if cache is still valid (within 30 minutes)
-        if (now - timestamp < CACHE_DURATION) {
-          return data;
-        } else {
-          // Cache expired, remove it
-          localStorage.removeItem(CACHE_KEY);
-        }
-      }
-    } catch (error) {
-      console.error('Error reading cache:', error);
-      localStorage.removeItem(CACHE_KEY);
-    }
-    return null;
-  };
-
-  const setCachedData = (data: FeaturedProfile[]) => {
-    try {
-      const cacheData = {
-        data,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-
-      // Preload images for better performance
-      preloadImages(data);
-    } catch (error) {
-      console.error('Error setting cache:', error);
-    }
-  };
-
-  const preloadImages = (profiles: FeaturedProfile[]) => {
-    profiles.forEach(profile => {
-      if (profile.images && profile.images.length > 0) {
-        profile.images.forEach(img => {
-          const image = new Image();
-          image.src = img.url;
-        });
-      }
-    });
-  };
-
   const fetchFeaturedProfiles = async (force: boolean = false) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Check cache first
-      const cachedData = getCachedData();
-      if (cachedData && !force) {
-        setProfiles(cachedData);
-        setIsLoading(false);
-        // Preload images from cache
-        preloadImages(cachedData);
-        return;
+      // Check if user is logged in
+      const token = localStorage.getItem('prembandhanToken');
+
+      // Prepare headers - include Authorization if token exists
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch('https://pb-app-lac.vercel.app/api/v1/public/featured');
+      const response = await fetch('https://pb-app-lac.vercel.app/api/v1/public/featured', {
+        method: 'GET',
+        headers: headers.Authorization ? headers : undefined,
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -121,20 +71,12 @@ const FeaturedProfiles = () => {
 
       if (data.success && data.profiles) {
         setProfiles(data.profiles);
-        // Cache the data
-        setCachedData(data.profiles);
       } else {
         throw new Error('Invalid response format');
       }
     } catch (error) {
       console.error('Error fetching featured profiles:', error);
       setError('Failed to load featured profiles. Please try again later.');
-
-      // Fallback to cached data even if expired
-      const cachedData = getCachedData();
-      if (cachedData) {
-        setProfiles(cachedData);
-      }
     } finally {
       setIsLoading(false);
     }
