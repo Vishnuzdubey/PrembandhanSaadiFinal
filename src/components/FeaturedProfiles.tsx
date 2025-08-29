@@ -111,7 +111,19 @@ const FeaturedProfiles = () => {
         return;
       }
 
-      const response = await fetch('https://pb-app-lac.vercel.app/api/v1/public/featured');
+      // Check if user is logged in
+      const token = localStorage.getItem('prembandhanToken');
+      
+      // Prepare headers - include Authorization if token exists
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch('https://pb-app-lac.vercel.app/api/v1/public/featured', {
+        method: 'GET',
+        headers: headers.Authorization ? headers : undefined,
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
