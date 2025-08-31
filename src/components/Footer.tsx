@@ -57,7 +57,7 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-rose" />
-                <span className="text-gray-300">+91 98765 43210</span>
+                <span className="text-gray-300">+91 93691 67302</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-rose" />
@@ -69,12 +69,9 @@ const Footer = () => {
               </div>
             </div>
 
-            <div className="mt-4 p-3 bg-white/5 rounded-lg">
-              <p className="text-sm text-gray-300 mb-2">Need immediate help?</p>
-              <button className="bg-rose text-white px-4 py-2 rounded-full text-sm hover:bg-rose-dark transition-colors">
-                Chat with us
-              </button>
-            </div>
+            {/* <div className="mt-4 p-3 bg-white/5 rounded-lg">
+              {/* <p className="text-sm text-gray-300 mb-2">Need immediate help?</p> */}
+            
           </div>
         </div>
 

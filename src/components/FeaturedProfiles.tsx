@@ -87,7 +87,13 @@ const FeaturedProfiles = () => {
   }, []);
 
   const handleRegisterClick = () => {
-    setShowAuthModal(true);
+    // If user is logged in, go to browse; otherwise open auth modal
+    const t = localStorage.getItem('prembandhanToken');
+    if (t) {
+      navigate('/BrowseProfile');
+    } else {
+      setShowAuthModal(true);
+    }
   };
 
   const handleViewProfile = (profileId: number) => {
@@ -250,14 +256,16 @@ const FeaturedProfiles = () => {
               >
                 View All Profiles
               </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="text-lg font-semibold border-2 hover:bg-rose hover:border-rose hover:text-white transition-all duration-200"
-                onClick={handleRegisterClick}
-              >
-                Register Free
-              </Button>
+              {(!localStorage.getItem('prembandhanToken')) && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="text-lg font-semibold border-2 hover:bg-rose hover:border-rose hover:text-white transition-all duration-200"
+                  onClick={handleRegisterClick}
+                >
+                  Register Free
+                </Button>
+              )}
             </div>
           </div>
         </div>

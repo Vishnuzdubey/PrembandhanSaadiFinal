@@ -91,22 +91,11 @@ const SuccessStories = (props: React.HTMLAttributes<HTMLElement>) => {
           ))}
         </div>
 
-        {/* Call to Action */}
-        <div className="text-center bg-gradient-to-r from-rose/10 via-coral/5 to-gold/10 rounded-2xl p-8">
-          <h3 className="text-2xl font-bold text-foreground mb-4">
-            Ready to Write Your Success Story?
-          </h3>
-          <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-            Join thousands of couples who found their perfect match. 
-            Your happily ever after is just a click away.
-          </p>
+        
+         <div className="text-center bg-gradient-to-r from-rose/10 via-coral/5 to-gold/10 rounded-2xl p-8">
+   
+  
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-rose text-white px-8 py-3 rounded-full hover:bg-rose-dark transition-colors font-semibold">
-              Create Your Profile
-            </button>
-            <button className="border border-rose text-rose px-8 py-3 rounded-full hover:bg-rose/5 transition-colors font-semibold">
-              View More Stories
-            </button>
           </div>
         </div>
       </div>

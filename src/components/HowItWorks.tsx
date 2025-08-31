@@ -1,10 +1,11 @@
 import { UserPlus, Search, MessageCircle, Heart, Shield, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AuthModal from "./AuthModal";
 
 const HowItWorks = (props: React.HTMLAttributes<HTMLElement>) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const token = localStorage.getItem('prembandhanToken');
 
   const handleRegisterClick = () => {
     setShowAuthModal(true);
@@ -145,14 +146,16 @@ const HowItWorks = (props: React.HTMLAttributes<HTMLElement>) => {
               Join thousands of successful couples from Gorakhpur who found their perfect match.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                variant="hero" 
-                size="lg" 
-                className="text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                onClick={handleRegisterClick}
-              >
-                Create Free Profile
-              </Button>
+                {!token && (
+                  <Button
+                    variant="hero"
+                    size="lg"
+                    className="text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                    onClick={handleRegisterClick}
+                  >
+                    Create Free Profile
+                  </Button>
+                )}
               <Button 
                 variant="outline" 
                 size="lg" 

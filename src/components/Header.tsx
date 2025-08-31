@@ -18,6 +18,8 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Track token in state so UI updates when token is added/removed
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('prembandhanToken'));
   const { toast } = useToast();
 
   useEffect(() => {
@@ -25,12 +27,14 @@ const Header = () => {
   }, []);
 
   const checkAuthStatus = async () => {
-    const token = localStorage.getItem('prembandhanToken');
-    if (token) {
+    const storedToken = localStorage.getItem('prembandhanToken');
+    setToken(storedToken);
+
+    if (storedToken) {
       try {
         const response = await fetch('https://pb-app-lac.vercel.app/api/v1/myprofile', {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${storedToken}`,
           },
         });
 
@@ -38,22 +42,30 @@ const Header = () => {
           const data = await response.json();
           if (data.success) {
             setUser(data.user);
+          } else {
+            // Token invalid according to API
+            localStorage.removeItem('prembandhanToken');
+            setToken(null);
           }
         } else {
           // Token is invalid, remove it
           localStorage.removeItem('prembandhanToken');
+          setToken(null);
         }
       } catch (error) {
         console.error('Error checking auth status:', error);
         localStorage.removeItem('prembandhanToken');
+        setToken(null);
       }
     }
+
     setIsLoading(false);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('prembandhanToken');
-    setUser(null);
+  setUser(null);
+  setToken(null);
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
@@ -75,7 +87,7 @@ const Header = () => {
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2 text-muted-foreground">
                 <Phone className="h-4 w-4" />
-                <span>+91 98765 43210</span>
+                <span>+91 93691 67302</span>
               </div>
               <div className="flex items-center space-x-2 text-muted-foreground">
                 <Shield className="h-4 w-4" />
@@ -122,7 +134,6 @@ const Header = () => {
               </select>
             </div>
           </div>
-
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <a href="#how-it-works" className="text-sm font-semibold hover:text-rose transition-colors duration-200 relative group">
@@ -147,47 +158,54 @@ const Header = () => {
           <div className="hidden md:flex items-center space-x-4">
             {isLoading ? (
               <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
-            ) : user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage
-                        src={user.images?.[0]?.url}
-                        alt={user.name}
-                        className="object-cover"
-                      />
-                      <AvatarFallback className="bg-rose text-white">
-                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.phone}</p>
+            ) : token ? (
+              user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage
+                          src={user.images?.[0]?.url}
+                          alt={user.name}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="bg-rose text-white">
+                          {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <div className="flex items-center justify-start gap-2 p-2">
+                      <div className="flex flex-col space-y-1 leading-none">
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{user.phone}</p>
+                      </div>
                     </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      My Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        My Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Log out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                // Token exists but user data not yet loaded; show a simple My Account link
+                <Link to="/profile" className="text-sm">
+                  <Button variant="outline" size="sm" className="font-semibold">My Account</Button>
+                </Link>
+              )
             ) : (
               <>
                 <Button
@@ -253,7 +271,8 @@ const Header = () => {
               <div className="space-y-3 pt-4 border-t">
                 {isLoading ? (
                   <div className="w-full h-10 bg-gray-200 rounded-md animate-pulse"></div>
-                ) : user ? (
+                ) : token ? (
+                  user ? (
                   <>
                     <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                       <Avatar className="h-10 w-10">
@@ -287,6 +306,17 @@ const Header = () => {
                       Logout
                     </Button>
                   </>
+                  ) : (
+                    // Token exists but user not loaded yet - show quick account link
+                    <>
+                      <Link to="/profile">
+                        <Button variant="outline" size="sm" className="w-full justify-start font-semibold">
+                          <User className="h-4 w-4 mr-2" />
+                          My Account
+                        </Button>
+                      </Link>
+                    </>
+                  )
                 ) : (
                   <>
                     <Button variant="ghost" size="sm" className="w-full justify-start font-semibold">
